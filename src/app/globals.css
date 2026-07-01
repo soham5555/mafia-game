@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+@keyframes overlay-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-12px) rotate(-4deg);
+  }
+  40% {
+    transform: translateX(12px) rotate(4deg);
+  }
+  60% {
+    transform: translateX(-8px) rotate(-2deg);
+  }
+  80% {
+    transform: translateX(8px) rotate(2deg);
+  }
+}
+
+@keyframes muzzle-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  10% {
+    opacity: 1;
+    transform: scale(1.6);
+  }
+  30% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-40px) rotate(-20deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(40px) rotate(20deg);
+    opacity: 0;
+  }
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+}
+
+@keyframes flash-bg {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.anim-pop {
+  animation: overlay-pop 1.6s ease-out forwards;
+}
+.anim-shake {
+  animation: shake 0.6s ease-in-out;
+}
+.anim-flash {
+  animation: muzzle-flash 0.8s ease-out forwards;
+}
+.anim-sweep {
+  animation: sweep 1.4s ease-in-out forwards;
+}
+.anim-float {
+  animation: float-up 1.6s ease-out forwards;
+}
+.anim-flash-bg {
+  animation: flash-bg 1.4s ease-out forwards;
+}
+
+@keyframes float-in {
+  0% {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.anim-float-in {
+  animation: float-in 0.3s ease-out forwards;
+}

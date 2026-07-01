@@ -1,0 +1,27 @@
+# Render.com Blueprint for Mafia: The City
+# In Render: New + -> Blueprint -> connect your GitHub repo.
+# It reads this file and provisions the web service automatically.
+#
+# You still add DATABASE_URL yourself (from Neon) in the dashboard,
+# OR uncomment the "databases" section below to let Render host Postgres.
+
+services:
+  - type: web
+    name: mafia-the-city
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false # you paste this in the dashboard (Neon or Render DB)
+      - key: NODE_VERSION
+        value: 20
+
+# --- OPTION: let Render host the database instead of Neon ---
+# databases:
+#   - name: mafia-db
+#     plan: free
+# Then set the web service's DATABASE_URL env var to this DB's
+# "Internal Connection String" from the Render dashboard.
