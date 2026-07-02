@@ -41,6 +41,7 @@ export default function RoomPage() {
   const [showQr, setShowQr] = useState(false);
 
   const [avatarMap, setAvatarMap] = useState<Record<string, string>>({});
+  const [siteTexts, setSiteTexts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setAuthToken(localStorage.getItem("mafia:auth"));
@@ -53,6 +54,10 @@ export default function RoomPage() {
           setAvatarMap(m);
         }
       })
+      .catch(() => {});
+    fetch("/api/texts")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.texts && setSiteTexts(d.texts))
       .catch(() => {});
   }, []);
 
@@ -300,7 +305,7 @@ export default function RoomPage() {
   // ---- LOBBY ----
   if (room.status === "lobby") {
     return (
-      <Shell code={code}>
+      <Shell code={code} siteTexts={siteTexts}>
         <div className="text-center">
           <p className="text-xs uppercase tracking-widest text-slate-400">Room Code</p>
           <div className="mt-1 flex items-center justify-center gap-3">
@@ -499,7 +504,7 @@ export default function RoomPage() {
         ? "🔪 The Maniac Wins!"
         : "Game Over";
     return (
-      <Shell code={code}>
+      <Shell code={code} siteTexts={siteTexts}>
         <div className="text-center">
           <h2 className="text-3xl font-black text-amber-400">{winnerLabel}</h2>
         </div>
@@ -582,7 +587,7 @@ export default function RoomPage() {
   }
 
   return (
-    <Shell code={code}>
+    <Shell code={code} siteTexts={siteTexts}>
       <ActionOverlay spec={overlay} />
 
       {authToken && (
@@ -1004,9 +1009,39 @@ function TargetBtn({
   );
 }
 
-function Shell({ code, children }: { code: string; children: React.ReactNode }) {
+function Shell({
+  code,
+  children,
+  siteTexts = {},
+}: {
+  code: string;
+  children: React.ReactNode;
+  siteTexts?: Record<string, string>;
+}) {
+  const bgType = siteTexts["bg_type"] ?? "gradient";
+  const bgColor = siteTexts["bg_color"] ?? "";
+  const bgGifUrl = siteTexts["bg_gif_url"] ?? "";
+
+  const mainStyle: React.CSSProperties =
+    bgType === "gif" && bgGifUrl
+      ? {
+          backgroundImage: `url(${bgGifUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundAttachment: "fixed",
+        }
+      : bgType === "color" && bgColor
+      ? { backgroundColor: bgColor }
+      : {};
+
+  const mainClass =
+    bgType === "gradient" || (!bgGifUrl && bgType === "gif") || (!bgColor && bgType === "color")
+      ? "min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black text-slate-100"
+      : "min-h-screen text-slate-100";
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black text-slate-100">
+    <main className={mainClass} style={mainStyle}>
       <div className="mx-auto max-w-lg px-4 py-6">
         <div className="mb-4 flex items-center justify-between">
           <span className="text-lg font-black text-amber-400">🕵️ MAFIA</span>

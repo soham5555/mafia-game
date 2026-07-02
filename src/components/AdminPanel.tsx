@@ -51,7 +51,7 @@ interface CustomAvatarRow {
   upcomingPercent: number;
 }
 
-type Tab = "members" | "shop" | "avatars" | "roles" | "text";
+type Tab = "members" | "shop" | "avatars" | "roles" | "text" | "background";
 
 export function AdminPanel({
   authToken,
@@ -73,6 +73,11 @@ export function AdminPanel({
   const [avatars, setAvatars] = useState<CustomAvatarRow[]>([]);
   const [texts, setTexts] = useState<Record<string, string>>({});
   const [textKeys, setTextKeys] = useState<string[]>([]);
+  // Background settings
+  const [bgType, setBgType] = useState<"gradient" | "color" | "gif">("gradient");
+  const [bgColor, setBgColor] = useState("#0f172a");
+  const [bgGifUrl, setBgGifUrl] = useState("");
+  const [bgLoaded, setBgLoaded] = useState(false);
 
   function flash(m: string) {
     setMsg(m);
@@ -111,17 +116,29 @@ export function AdminPanel({
     if (res.ok) setAvatars((await res.json()).avatars ?? []);
   }, []);
 
+  const loadBackground = useCallback(async () => {
+    const res = await fetch(`/api/admin/background?token=${authToken}`);
+    if (res.ok) {
+      const d = await res.json();
+      setBgType(d.bgType ?? "gradient");
+      setBgColor(d.bgColor || "#0f172a");
+      setBgGifUrl(d.bgGifUrl || "");
+      setBgLoaded(true);
+    }
+  }, [authToken]);
+
   useEffect(() => {
     if (tab === "shop") loadItems();
     if (tab === "roles") loadRoles();
     if (tab === "text") loadTexts();
     if (tab === "avatars") loadAvatars();
-  }, [tab, loadItems, loadRoles, loadTexts, loadAvatars]);
+    if (tab === "background") loadBackground();
+  }, [tab, loadItems, loadRoles, loadTexts, loadAvatars, loadBackground]);
 
   return (
     <div className="mt-4">
-      <div className="mb-3 grid grid-cols-5 gap-1 rounded-xl bg-slate-900 p-1">
-        {(["members", "shop", "avatars", "roles", "text"] as const).map((t) => (
+      <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl bg-slate-900 p-1">
+        {(["members", "shop", "avatars", "roles", "text", "background"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -129,7 +146,7 @@ export function AdminPanel({
               tab === t ? "bg-amber-500 text-slate-950" : "text-slate-400"
             }`}
           >
-            {t}
+            {t === "background" ? "🎨 BG" : t}
           </button>
         ))}
       </div>
@@ -365,6 +382,126 @@ export function AdminPanel({
             className="w-full rounded-xl bg-amber-500 py-2.5 font-bold text-slate-950"
           >
             Save Text
+          </button>
+        </div>
+      )}
+
+      {/* BACKGROUND: set background colour or GIF for main menu + game screens */}
+      {tab === "background" && (
+        <div className="space-y-4">
+          <p className="text-xs text-slate-400">
+            Set the background for the main menu and game screens. Changes take effect immediately
+            for all users after they refresh.
+          </p>
+
+          {/* Type selector */}
+          <div>
+            <label className="text-xs font-semibold uppercase text-slate-400">Background Type</label>
+            <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-slate-900 p-1">
+              {(["gradient", "color", "gif"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setBgType(t)}
+                  className={`rounded-lg py-2 text-xs font-bold capitalize ${
+                    bgType === t ? "bg-amber-500 text-slate-950" : "text-slate-400"
+                  }`}
+                >
+                  {t === "gradient" ? "🌌 Gradient" : t === "color" ? "🎨 Colour" : "🖼️ GIF"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Colour picker – shown for color type */}
+          {bgType === "color" && (
+            <div>
+              <label className="text-xs font-semibold uppercase text-slate-400">
+                Background Colour
+              </label>
+              <div className="mt-2 flex items-center gap-3">
+                <input
+                  type="color"
+                  value={bgColor.startsWith("#") ? bgColor : "#0f172a"}
+                  onChange={(e) => setBgColor(e.target.value)}
+                  className="h-10 w-16 cursor-pointer rounded-lg border border-slate-600 bg-transparent"
+                />
+                <input
+                  value={bgColor}
+                  onChange={(e) => setBgColor(e.target.value)}
+                  placeholder="#0f172a or rgb(15,23,42)"
+                  className="flex-1 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm outline-none focus:border-amber-400"
+                />
+              </div>
+              <div
+                className="mt-2 h-12 w-full rounded-lg border border-slate-600"
+                style={{ backgroundColor: bgColor }}
+              />
+            </div>
+          )}
+
+          {/* GIF URL – shown for gif type */}
+          {bgType === "gif" && (
+            <div>
+              <label className="text-xs font-semibold uppercase text-slate-400">
+                GIF / Image URL
+              </label>
+              <input
+                value={bgGifUrl}
+                onChange={(e) => setBgGifUrl(e.target.value)}
+                placeholder="https://example.com/background.gif"
+                className="mt-2 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm outline-none focus:border-amber-400"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Paste any direct GIF, PNG, or JPEG URL. Hosted images from imgur, giphy, etc. all
+                work.
+              </p>
+              {bgGifUrl && (
+                <div className="mt-2 overflow-hidden rounded-lg border border-slate-600">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={bgGifUrl}
+                    alt="Background preview"
+                    className="max-h-40 w-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {bgLoaded && bgType === "gradient" && (
+            <p className="rounded-lg bg-slate-800 px-3 py-2 text-xs text-slate-400">
+              The default gradient background will be used. Switch to Colour or GIF to customise.
+            </p>
+          )}
+
+          <button
+            onClick={async () => {
+              const ok = await api("/api/admin/background", { bgType, bgColor, bgGifUrl });
+              if (ok) flash("Background saved! Users will see it on next page load.");
+            }}
+            className="w-full rounded-xl bg-amber-500 py-2.5 font-bold text-slate-950"
+          >
+            💾 Save Background
+          </button>
+
+          <button
+            onClick={async () => {
+              setBgType("gradient");
+              setBgColor("#0f172a");
+              setBgGifUrl("");
+              const ok = await api("/api/admin/background", {
+                bgType: "gradient",
+                bgColor: "",
+                bgGifUrl: "",
+              });
+              if (ok) flash("Background reset to default gradient.");
+            }}
+            className="w-full rounded-xl border border-slate-600 py-2 text-sm font-bold text-slate-300"
+          >
+            🔄 Reset to Default
           </button>
         </div>
       )}

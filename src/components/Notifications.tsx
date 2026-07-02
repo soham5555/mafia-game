@@ -151,18 +151,39 @@ export function Notifications({ authToken }: { authToken: string }) {
                 ✕
               </button>
             </div>
-            {pushState === "default" && (
+            {/* Push notification controls */}
+            {pushState === "unsupported" ? (
+              <p className="mb-3 rounded-lg bg-slate-800 px-3 py-2 text-xs text-slate-400">
+                ℹ️ Your browser does not support push notifications.
+              </p>
+            ) : pushState === "granted" ? (
+              <div className="mb-3 flex items-center gap-2 rounded-lg bg-emerald-900/30 px-3 py-2 text-xs text-emerald-300">
+                <span>✅ Push notifications enabled!</span>
+                <button
+                  onClick={async () => {
+                    // There is no programmatic way to revoke; guide the user.
+                    alert(
+                      "To disable notifications, open your browser's site settings and set Notifications to 'Block' for this site."
+                    );
+                  }}
+                  className="ml-auto text-xs text-slate-400 underline"
+                >
+                  Disable
+                </button>
+              </div>
+            ) : pushState === "denied" ? (
+              <p className="mb-3 rounded-lg bg-red-900/30 px-3 py-2 text-xs text-red-300">
+                🔕 Push notifications are blocked. Open your browser's site settings and allow
+                notifications for this site, then refresh.
+              </p>
+            ) : (
+              /* default — not yet asked */
               <button
                 onClick={enablePush}
-                className="mb-3 w-full rounded-lg bg-amber-500 py-2 text-sm font-bold text-slate-950"
+                className="mb-3 w-full rounded-lg bg-amber-500 py-2 text-sm font-bold text-slate-950 hover:bg-amber-400 active:scale-95"
               >
                 🔔 Enable push notifications
               </button>
-            )}
-            {pushState === "denied" && (
-              <p className="mb-3 rounded-lg bg-slate-800 px-3 py-2 text-xs text-slate-400">
-                Push blocked in browser settings. Enable notifications for this site to get alerts.
-              </p>
             )}
             <div className="max-h-[60vh] space-y-2 overflow-y-auto">
               {items.length === 0 ? (

@@ -1,7 +1,8 @@
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getUserByToken, verifyPassword, hashPassword } from "@/lib/auth";
+import { getUserByToken, verifyPassword, hashPassword, genSessionToken } from "@/lib/auth";
+import { notify } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +24,22 @@ export async function POST(req: Request) {
   if (!verifyPassword(currentPassword, user.passwordHash))
     return Response.json({ error: "Current password is incorrect" }, { status: 400 });
 
+  // Generate a brand-new session token so all existing sessions are invalidated.
+  const newSessionToken = genSessionToken();
+
   await db
     .update(users)
-    .set({ passwordHash: hashPassword(newPassword) })
+    .set({ passwordHash: hashPassword(newPassword), token: newSessionToken })
     .where(eq(users.id, user.id));
 
-  return Response.json({ ok: true });
+  // Notify the user their password was changed.
+  await notify(
+    user.id,
+    "info",
+    "🔑 Your password was changed successfully. All previous sessions have been logged out.",
+    { event: "password_changed", at: new Date().toISOString() }
+  );
+
+  // Return the new token so the client can immediately re-authenticate.
+  return Response.json({ ok: true, newToken: newSessionToken });
 }

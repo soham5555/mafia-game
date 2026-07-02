@@ -418,7 +418,20 @@ export default function HomePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to change password.");
-      setCpSuccess("Password changed successfully!");
+
+      // The server has invalidated the old session and returned a new token.
+      // Update local storage and app state with the new token so the user
+      // stays logged in on THIS device, then briefly show success before logout.
+      const newToken = data.newToken as string | undefined;
+      if (newToken) {
+        localStorage.setItem("mafia:auth", newToken);
+        setAuthToken(newToken);
+        await loadMe(newToken);
+      }
+
+      setCpSuccess(
+        "✅ Password changed! All other sessions have been logged out. You'll stay logged in here."
+      );
       setCpCurrent("");
       setCpNew("");
       setCpConfirm("");
@@ -495,8 +508,31 @@ export default function HomePage() {
     setMsg("");
   }
 
+  // Build the background style based on admin setting stored in siteTexts.
+  const bgType = siteTexts["bg_type"] ?? "gradient";
+  const bgColor = siteTexts["bg_color"] ?? "";
+  const bgGifUrl = siteTexts["bg_gif_url"] ?? "";
+
+  const mainStyle: React.CSSProperties =
+    bgType === "gif" && bgGifUrl
+      ? {
+          backgroundImage: `url(${bgGifUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundAttachment: "fixed",
+        }
+      : bgType === "color" && bgColor
+      ? { backgroundColor: bgColor }
+      : {};
+
+  const mainClassName =
+    bgType === "gradient" || (!bgGifUrl && bgType === "gif") || (!bgColor && bgType === "color")
+      ? "min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black text-slate-100"
+      : "min-h-screen text-slate-100";
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black text-slate-100">
+    <main className={mainClassName} style={mainStyle}>
       <div className="mx-auto flex min-h-screen max-w-lg flex-col px-5 py-8">
         <header className="text-center">
           <div className="text-6xl">🕵️‍♂️</div>
