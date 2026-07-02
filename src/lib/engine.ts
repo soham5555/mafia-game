@@ -766,7 +766,7 @@ export async function checkWin(roomId: number) {
     winner = "maniac";
   } else if (mafia.length === 0 && !maniac) {
     winner = "town";
-  } else if (mafia.length > 0 && !maniac && mafia.length >= town.lengt) {
+  } else if (mafia.length > 0 && !maniac && mafia.length >= town.length) {
     // mafia reach parity with everyone else
     winner = "mafia";
   }
