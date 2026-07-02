@@ -250,6 +250,50 @@ export async function resolveNight(roomId: number) {
   const name = (id: number | null | undefined) =>
     id != null ? byId.get(id)?.name ?? "someone" : "someone";
 
+
+  // ---- Track idle nights & eliminate after 3 consecutive skips ----
+  const actorIds = new Set(acts.map((a) => a.actorId));
+  const idleDeaths = new Set<number>();
+  for (const p of all) {
+    if (!p.alive) continue;
+    const roleDef = ROLESX[p.role ?? ""] ?? ROLES[p.role ?? ""];
+    if (!roleDef?.nightAction) continue; // only track players who CAN act
+    const st = { ...((p.state as Record<string, unknown>) ?? {}) };
+    const prevIdle = (st.idleNights as number) ?? 0;
+    if (actorIds.has(p.id)) {
+      // Player acted — reset idle counter
+      st.idleNights = 0;
+    } else {
+      // Player skipped — increment idle counter
+      st.idleNights = prevIdle + 1;
+    }
+    if ((st.idleNights as number) >= 3) {
+      // Eliminated on 3rd consecutive idle night
+      idleDeaths.add(p.id);
+      st.idleNights = 0;
+      st.diedAt = "night";
+      st.diedDay = day;
+      await db.update(players).set({ alive: false, state: st }).where(eq(players.id, p.id));
+      await sysMessage(roomId, `🕳️ ${name(p.id)} disappeared under mysterious circumstances… Their inactivity drew suspicion and sealed their fate.`);
+    } else {
+      await db.update(players).set({ state: st }).where(eq(players.id, p.id));
+    }
+  }
+  if (idleDeaths.size > 0) await checkWin(roomId);
+
+  // ---- If nobody submitted any action, skip resolution and advance to day ----
+  if (acts.length === 0) {
+    await sysMessage(roomId, `☀️ Day ${day}: The night was uneventful. The city slept in silence.`);
+    const dayEnds =
+      room.phaseSeconds > 0 ? new Date(Date.now() + room.phaseSeconds * 1000) : null;
+    await db
+      .update(rooms)
+      .set({ status: "day", phaseEndsAt: dayEnds, updatedAt: new Date() })
+      .where(eq(rooms.id, roomId));
+    await checkWin(roomId);
+    return;
+  }
+
   // ---- Blocking (Mistress) ----
   const blocked = new Set<number>();
   const mistress = findRole(all, "mistress");
