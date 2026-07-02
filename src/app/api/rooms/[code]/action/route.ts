@@ -3,7 +3,7 @@ import { actions, players } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getRoomByCode, getPlayerByToken } from "@/lib/state";
 import { ROLES } from "@/lib/roles";
-import { emitEvent } from "@/lib/engine";
+import { emitEvent, sysMessage } from "@/lib/engine";
 
 export const dynamic = "force-dynamic";
 
