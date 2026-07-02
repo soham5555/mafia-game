@@ -117,6 +117,12 @@ export default function HomePage() {
   const [customAvatars, setCustomAvatars] = useState<CustomAvatar[]>([]);
   const [viewProfile, setViewProfile] = useState<string | null>(null);
   const [visitors, setVisitors] = useState<{ username: string; avatar: string; at: string }[]>([]);
+  const [cpCurrent, setCpCurrent] = useState("");
+  const [cpNew, setCpNew] = useState("");
+  const [cpConfirm, setCpConfirm] = useState("");
+  const [cpError, setCpError] = useState("");
+  const [cpSuccess, setCpSuccess] = useState("");
+  const [cpBusy, setCpBusy] = useState(false);
 
   useEffect(() => {
     fetch("/api/texts")
@@ -394,6 +400,33 @@ export default function HomePage() {
       body: JSON.stringify({ authToken, isPublic }),
     });
     if (authToken) loadMe(authToken);
+  }
+
+  async function changePassword() {
+    if (!authToken) return;
+    setCpError("");
+    setCpSuccess("");
+    if (!cpCurrent || !cpNew || !cpConfirm) return setCpError("All fields are required.");
+    if (cpNew !== cpConfirm) return setCpError("New passwords do not match.");
+    if (cpNew.length < 4) return setCpError("New password must be at least 4 characters.");
+    setCpBusy(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: authToken, currentPassword: cpCurrent, newPassword: cpNew }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to change password.");
+      setCpSuccess("Password changed successfully!");
+      setCpCurrent("");
+      setCpNew("");
+      setCpConfirm("");
+    } catch (e) {
+      setCpError(e instanceof Error ? e.message : "Failed.");
+    } finally {
+      setCpBusy(false);
+    }
   }
 
   // ---- friends actions ----
@@ -858,6 +891,48 @@ export default function HomePage() {
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* CHANGE PASSWORD */}
+                <div className="mt-4 border-t border-slate-700 pt-4">
+                  <h3 className="text-sm font-bold uppercase text-amber-400">🔑 Change Password</h3>
+                  <div className="mt-3 space-y-2">
+                    <input
+                      type="password"
+                      placeholder="Current password"
+                      value={cpCurrent}
+                      onChange={(e) => setCpCurrent(e.target.value)}
+                      className="w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-2 text-sm outline-none focus:border-amber-400"
+                    />
+                    <input
+                      type="password"
+                      placeholder="New password"
+                      value={cpNew}
+                      onChange={(e) => setCpNew(e.target.value)}
+                      className="w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-2 text-sm outline-none focus:border-amber-400"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Confirm new password"
+                      value={cpConfirm}
+                      onChange={(e) => setCpConfirm(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && changePassword()}
+                      className="w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-2 text-sm outline-none focus:border-amber-400"
+                    />
+                    {cpError && (
+                      <p className="rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-300">{cpError}</p>
+                    )}
+                    {cpSuccess && (
+                      <p className="rounded-lg bg-emerald-500/20 px-3 py-2 text-sm text-emerald-300">{cpSuccess}</p>
+                    )}
+                    <button
+                      onClick={changePassword}
+                      disabled={cpBusy}
+                      className="w-full rounded-xl bg-amber-500 py-2 text-sm font-bold text-slate-950 disabled:opacity-50"
+                    >
+                      {cpBusy ? "Changing…" : "Change Password"}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
